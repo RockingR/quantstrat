@@ -22,11 +22,29 @@ suppressWarnings(rm("account.st","portfolio.st","stock.str","stratBBands","initD
 
 ```
 
+> inside `rm()`, argument `pos = .strategy` is strange to me, I need to **learn** more about it 
+
+```
+rm    (..., list = character(), pos = -1,
+       envir = as.environment(pos), inherits = FALSE)
+```
+> **How to use args**:   
+    1. ...  the objects to be removed, as names (unquoted) or character strings (quoted).  
+    2. list a character vector naming objects to be removed.  
+    3. pos where to do the removal. By default, uses the current environment. See ‘details’ for other possibilities.  
+
+> **Diff between `pos` and `envir`**:   
+    1. The `pos` argument can specify the environment from which to remove the objects in any of several ways:      
+        - as an integer (the position in the search list);     
+        - as the character string name of an element in the search list;      
+        - or as an environment (including using sys.frame to access the currently active function calls).   
+        - The envir argument is an alternative way to specify an environment, but is primarily there for back compatibility.    
+
 ## setup the string name of stocks to test
 
 ```{r}
 
-stock.str='IBM' # what are we trying it on
+stock.str='IBM' # string, name of stock
 ```
 
 
@@ -57,7 +75,7 @@ stock(primary_id, currency = NULL, multiplier = 1, tick_size = 0.01,
 
 ```{r}
 
-currency('USD')
+currency('USD') # string
 
 stock(stock.str,currency='USD',multiplier=1)
 
@@ -86,19 +104,29 @@ stock(stock.str,currency='USD',multiplier=1)
 
 ```{r}
 
-initDate='2006-12-31'
+initDate='2006-12-31' # date is also a string
 initEq=1000000
 
-portfolio.st='bbands'  # resulting portfolio object
-account.st='bbands'
+portfolio.st='bbands'  # it is a string, portfolio name in the strategy using strategy name
+account.st='bbands' # same string
 
 ```
 
-# Function introduction
+```{r}
+# prepare the strings first
+portfolio.st
+stock.str
+initDate
 
-## initPortf()
+# with strings ready, now initialize the portfolio
+initPortf(portfolio.st,symbols=stock.str, initDate=initDate)
+```
 
-> **What is it?** -- Constructs and initializes a portfolio object, which is used to contain transactions, positions, and aggregate level values.
+
+
+## **initPortf()**
+
+> **What is it?** -- Constructs and initializes **a portfolio object**, which is used to contain *transactions, positions, and aggregate level values*.
 
 ```
 initPortf(name = "default", symbols, initPosQty = 0,
@@ -109,13 +137,6 @@ initPortf(name = "default", symbols, initPosQty = 0,
 > **symbols** -- a list of instrument identifiers for those instruments contained in the portfolio
 > **initPosQty** -- Initial position quantity, default is zero
 
-```{r}
-portfolio.st
-stock.str
-initDate
-initPortf(portfolio.st,symbols=stock.str, initDate=initDate)
-
-```
 
 ## **initPortf() Details**
 
@@ -166,7 +187,7 @@ initPortf(portfolio.st,symbols=stock.str, initDate=initDate)
 
 ## initAcct()
 
-> **Output hidden** -- Outputs Constructs multi-column xts object used to store aggregated portfolio calculations
+> **Output hidden** -- Outputs Constructs multi-column xts object used to **store aggregated portfolio calculations**
 
 ```
 initAcct(name = "default", portfolios, initDate = "1950-01-01",
@@ -175,13 +196,13 @@ initAcct(name = "default", portfolios, initDate = "1950-01-01",
 ```
 > **name** -- Account name, as string  
 
-> **portfolios** -- character vector of strigs naming portfolios included in this account
+> **portfolios** -- character vector of strings naming portfolios included in this account
 
 ```{r}
 
-# initAcct(account.st,portfolios='bbands', initDate=initDate)
+# initAcct(account.st,portfolios='bbands', initDate=initDate) same outcome as below
 
-initAcct(account.st,portfolios= portfolio.st, initDate=initDate)
+initAcct(account.st,portfolios= portfolio.st, initDate=initDate) 
 
 ```
 
@@ -190,11 +211,15 @@ initAcct(account.st,portfolios= portfolio.st, initDate=initDate)
 
 > An **Account object** is a list of portfolios with portfolio summary information
 
-> The Account object is modeled on the CFTC Thirteen-column presentation table. 
-    - the first CFTC six column presentations: *Beg.Eq*, *Additions*, *Withdrawals*, *Net.Perf*, *End.Eq*, *Period.ROR*   
-    - note: No reason to persist *Period.ROR*, and *Beg.Eq* = Previous *End.Eq*, So we're left with four columns. Note that *Period.ROR* can be calc'd several different ways and is best left as a function.  
-    - the remaining 7 columns: - *Commission*, *Net.Realized*, *Interest*, *Ch.Unrealized*, *Advisory.Fees*, *Wealth.Index*   
-    - note: Again, no need to add *Wealth.Index*. Eventually, these additional columns will be useful. *Gross.Realized* will be calculated as (Net) `Realized.PL` + `Txn.Fees`  
+> The Account object is modeled on the CFTC Thirteen-column presentation table.
+
+> the first CFTC six column presentations: *Beg.Eq*, *Additions*, *Withdrawals*, *Net.Perf*, *End.Eq*, *Period.ROR*   
+
+> note: No reason to persist *Period.ROR*, and *Beg.Eq* = Previous *End.Eq*, So we're left with four columns. Note that *Period.ROR* can be calc'd several different ways and is best left as a function.  
+
+> the remaining 7 columns: - *Commission*, *Net.Realized*, *Interest*, *Ch.Unrealized*, *Advisory.Fees*, *Wealth.Index*   
+  
+> note: Again, no need to add *Wealth.Index*. Eventually, these additional columns will be useful. *Gross.Realized* will be calculated as (Net) `Realized.PL` + `Txn.Fees`  
 
 > TODO Add `calcPeriodROR` function
 
@@ -225,7 +250,7 @@ initOrders(portfolio=portfolio.st,initDate=initDate)
 
 ```{r}
 
-addPosLimit(portfolio.st, stock.str, initDate, 200, 2 ) #set max pos
+addPosLimit(portfolio.st, stock.str, initDate, 200, 2 ) #set max position, not sure what 2 = levels? mini position?
 ```
 
 ## `addPosLimit`
@@ -279,46 +304,304 @@ addPosLimit(portfolio, symbol, timestamp, maxpos, longlevels = 1,
 ```{r}
 
 stratBBands <- strategy("bbands")
+stratBBands
 ```
 
-constructor for objects of type 'strategy'
+## **`strategy()`** is about?
 
-Description
+> `strategy()` is to create objects of type 'strategy'
 
-variables passed in dots will be added to the strategy object, and may be used by initialization and wrapup functions, as well as indicators, signals, and rules.
+> **What is for**:  
+1. variables passed in `dots` will be added to the strategy object  
+2. these variables may be used by **initialization and wrapup** functions  
+3. they can also be used in **indicators, signals, and rules**.
 
-Usage
 
+```
 strategy(name, ..., assets = NULL, constraints = NULL, store = FALSE)
-Arguments
 
-name  
-character string naming the strategy
+```
 
-...	
-any other passthru parameters
+> **Arguments**
 
-assets	
-optional list of assets to apply the strategy to, should normally be defined in the portfolio, not here
+> `name`  character string naming the strategy
 
-constraints	
-optional portfolio constraints object matching assets
+> `...`   any other passthru parameters
 
-store	
-TRUE/FALSE whether to store the strategy in the .strategy environment, or return it. default FALSE
+> `assets`  optional list of assets to apply the strategy to, should normally be defined in the portfolio, not here
 
-See Also
+> `constraints`	  optional portfolio constraints object matching assets
 
-applyStrategy
+> `store`   TRUE/FALSE whether to store the strategy in the .strategy environment, or return it. default FALSE
+
+> also see `applyStrategy`
+
+
+```{r}
 
 #one indicator
-stratBBands <- add.indicator(strategy = stratBBands, name = "BBands", arguments = list(HLC = quote(HLC(mktdata)), maType='SMA'), label='BBands')
+stratBBands <- add.indicator(strategy = stratBBands, name = "BBands", arguments = list(HLC = quote(HLC(mktdata)), maType='SMA'), label='BBands') # arguments such as HLC and maType are both for function BBands, not for function add.indicator
+stratBBands # check strategy content with the first indicator
+```
 
+## **`add.indicator`**  {quantstrat} 
+
+> **purpose**     add an indicator to a strategy
+
+
+```
+
+add.indicator(strategy, name, arguments, parameters = NULL, label = NULL,
+  ..., enabled = TRUE, indexnum = NULL, store = FALSE)
+```
+
+### **Arguments**
+
+> `strategy`   an object (or the name of an object) type 'strategy' to add the indicator to
+
+> `name`       name of the indicator function – must correspond to an R function
+
+> `arguments`  default arguments to be passed to an indicator function when executed
+
+> `parameters` vector of strings naming parameters to be saved for apply-time definition, default NULL, only needed if you need special names to avoid argument collision
+
+> `label`      arbitrary text label for indicator output. This will also be used as the name of the indicator list when it is stored. NULL default will be converted to '<name>.ind'
+
+> `...`        any other passthru parameters
+
+> `enabled`    TRUE/FALSE whether the indicator is enabled for use in applying the strategy, default TRUE
+
+> `indexnum`   if you are updating a specific indicator, the label or the index number in the $indicators list to update.
+
+> `store`     TRUE/FALSE whether to store the strategy in the .strategy environment, or return it. default FALSE
+
+### **Details**   
+
+> **Indicators**    
+-- are always `path-independent`, and should be constructed from *vectorized functions* where possible.
+
+> **Indicators**   
+- are applied before `signals` and `rules`, and *the output of indicators* may be used as inputs to construct signals or fire rules.
+
+> **arguments and parameters**   
+- are `named lists` that describe the arguments to be passed to the *indicator function*.  
+- arguments is for defining any non-default arguments to be passed to the function named in the name of the indicator. For example, the *x argument to a moving average function* may be defined as x=quote(Cl(mktdata))
+
+> **`quote()` and `mktdata`**    
+- If you look at the demo scripts, you'll notice that we often use quote(mktdata) in *setting up indicators, signals, or rules*.  
+- This tells R to *delay evaluation via quote()*, and to use the special variable `mktdata`.
+
+> **`mktdata`**  
+- is typically created internally to quantstrat by looking in the `global environment` for a time series of prices or returns.  
+- `mktdata` may also contain other data you've manipulated outside quantstrat, though where possible you should use quantstrat to contain all the logic for the strategy, to aid in maintenance and modifications.
+
+> **`quote()` and `mktdata' and delay**  
+- The use of quote() tells R to not evaluate what's inside the quote until the function is evaluated later.   
+- By the time that code is evaluated, mktdata will be populated with the correct price information based on the contents of whatever portfolio you are evaluating the strategy on.
+
+> **`parameters`**  
+- is another named list, and normally will not be needed.     
+- If you have *multiple indicator, signal, or rule functions* share the that both *share the same argument names* and will need to *have different values passed to those arguments as defined parameters at apply-time*, then you may need to give them *unique names* so that delayed evaluation can sort it all out for you at apply-time.   
+- We will endeavor to get an example of named parameters into the demo scripts.  
+
+> **`label`**  
+- if label is not supplied, NULL default will be converted to '<name>.ind'  
+- unless there already exists an indicator with that label in which case it will be appended with a number (i.e. '<name>.ind.2', '<name>.ind.3', etc.)  
+- If the indicator function returns *multiple columns*, the label will be paste'd to the end of either the returned column names or the respective column number when applying it to mktdata.
+
+> see functions:  
+- `quote`, `applyIndicators`, `add.signal`, `add.rule`
+
+## **`BBands`**  {TTR}  
+
+> **What is BBands**  
+- Bollinger Bands are a way to compare a security's volatility and price levels over a period of time. Developed by John Bollinger.
+
+```
+
+BBands(HLC, n = 20, maType, sd = 2, ...)
+```
+
+### **`Arguments`**  
+
+> **`HLC`**    
+- Object that is coercible to xts or matrix and contains High-Low-Close prices. If only a univariate series is given, it will be used. See details.
+
+> **`n`**  	
+- Number of periods for moving average.
+
+> **`maType`**    
+- A function or a string naming the function to be called.
+
+> **`sd`**    	
+- The number of standard deviations to use.
+
+> `...`    	
+- Other arguments to be passed to the maType function.
+
+
+### **Bollinger Bands consist of three lines**:
+
+> **The middle band**  
+- is generally a 20-period SMA of the typical price ([high + low + close]/3).   
+
+> **The upper and lower bands**  
+- are sd standard deviations (generally 2) above and below the MA.
+
+> (not sure)   
+- The middle band is usually calculated using the typical price, but if a univariate series (e.g. Close, Weighted Close, Median Price, etc.) is provided, it will be used instead.
+
+### **returned Value**  
+
+> A object of the same class as HLC or a matrix (if try.xts fails) containing the columns:  
+
+> `dn` - The lower Bollinger Band.
+
+> `mavg` - The middle Moving Average (see notes).
+
+> `up` - The upper Bollinger Band.
+
+> `pctB` - The %B calculation.
+
+### **Note**
+
+> Using any moving average other than `SMA` will result in **inconsistencies** between the moving average calculation and the standard deviation calculation. Since, by definition, a rolling standard deviation uses a simple moving average.
+
+### **example**  
+
+```{r}
+
+## The examples below show the differences between using a
+## High-Low-Close series, and just a close series when
+## calculating Bollinger Bands.
+data(ttrc)
+bbands.HLC <- BBands( ttrc[,c("High","Low","Close")] )
+head(bbands.HLC, 30)
+bbands.close <- BBands( ttrc[,"Close"] )
+head(bbands.close, 30)
+```
+
+
+```{r}
 
 #add signals:
 stratBBands <- add.signal(stratBBands,name="sigCrossover",arguments = list(columns=c("Close","up"),relationship="gt"),label="Cl.gt.UpperBand")
+stratBBands # check strategy content with the first signal
+
 stratBBands <- add.signal(stratBBands,name="sigCrossover",arguments = list(columns=c("Close","dn"),relationship="lt"),label="Cl.lt.LowerBand")
+stratBBands # check strategy with the second signal
+
 stratBBands <- add.signal(stratBBands,name="sigCrossover",arguments = list(columns=c("High","Low","mavg"),relationship="op"),label="Cross.Mid")
+stratBBands # check strategy with the third signal
+
+```
+### **`add.signal`**  
+
+> **`add.signal`**  
+- add a signal to a strategy  
+- adds a signal definition to a strategy object.
+
+```
+
+add.signal(strategy, name, arguments, parameters = NULL, label = NULL, ...,
+  enabled = TRUE, indexnum = NULL, store = FALSE)
+
+```
+
+
+### **Arguments**  
+
+> `strategy`    
+- an object (or the name of an object) of type 'strategy' to add the signal to
+
+> `name`  	
+- name of the signal, must correspond to an R function
+
+> `arguments`  	
+- named list of default arguments to be passed to an signal function when executed
+
+> `parameters`  	
+- vector of strings naming parameters to be saved for apply-time definition,default NULL, only needed if you need special names to *avoid argument collision*  
+
+> `label`  	
+- arbitrary text label for signal output, default NULL
+
+> '...'  	
+- any other passthru parameters
+
+> `enabled`  	
+- TRUE/FALSE whether the signal is enabled for use in applying the strategy, default TRUE
+
+> `indexnum`  	
+- if you are *updating a specific signal*, the index number in the `$signals` list to update
+
+> `store`  	
+- TRUE/FALSE whether to store the strategy in the .strategy environment, or return it. default FALSE
+
+### **Details**   
+
+> `Signals`  
+- denote times at which the strategy may want to take action.    
+- Common signals types from the literature include `crossovers`, `thresholds`, or *other interactions* between your `mktdata` and your indicators.  
+
+> `label` for names
+- if label is not supplied, NULL default will be converted to '<name>.sig'  
+- if the signal function returns one named column, we use that, and ignore the label  
+- If the signal function returns multiple columns, the label will be paste'd to either the returned column names or the respective column number.  
+
+### returned Value  
+
+> **(not sure)** if strategy was the name of a strategy, the name. If it was a strategy, the updated strategy.  
+
+> See Also  
+- `applySignals` `add.indicator` `add.rule` `sigComparison` `sigCrossover` `sigFormula` `sigPeak` `sigThreshold`  
+
+
+## **`sigCrossover`**  
+
+### **what `sigCrossover` is for**  
+- generate a crossover signal  
+- This will generate a crossover signal, which is a dimension-reduced version of a comparison signal sigComparison.  
+
+```
+
+sigCrossover(label, data = mktdata, columns, relationship = c("gt", "lt",
+  "eq", "gte", "lte"), offset1 = 0, offset2 = 0)
+
+```
+### **how to apply `sigCrossover` into `add.signal`?**  
+
+> `sigCrossover` arguments
+- arguments like `label` and `data` can be ignored in `add.signal`  
+- `label=label` in `add.signal` and `data = mktdata` are taken for granted
+
+
+### **Arguments**  
+
+> `label`    
+- text label to apply to the output
+
+> `data`  
+- data to apply crossover to
+
+> `columns`  	
+- named columns to apply crossover of the first against the second
+
+> `relationship`  	
+- one of c("gt","lt","eq","gte","lte") or reasonable alternatives
+
+> `offset1`  	(not sure)  
+- numeric offset to be added to the first column prior to comparison
+
+> `offset2`  	(not sure)  
+- numeric offset to be added to the second column prior to comparison
+
+### **Details**  
+
+> It will return TRUE on the period in which there is a crossover in the direction specified by relationship, and NA otherwise.
+
+> If you want all the information, use a comparison instead. `op` = opposite
+
 
 # lets add some rules
 stratBBands <- add.rule(stratBBands,name='ruleSignal', arguments = list(sigcol="Cl.gt.UpperBand",sigval=TRUE, orderqty=-100, ordertype='market', orderside=NULL, threshold=NULL,osFUN=osMaxPos),type='enter')
